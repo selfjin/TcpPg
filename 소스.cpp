@@ -6,7 +6,7 @@ int n;
 #include<WinSock2.h>
 #include<WS2tcpip.h>
 #include<iostream>
-
+#include<thread>
 
 int main()
 {
@@ -27,25 +27,36 @@ int main()
 
 	connect(ClientSocket, (sockaddr*)&addr, sizeof(addr));
 
-	char SendMessage[] = "Client Send Message";
-	send(ClientSocket, SendMessage, strlen(SendMessage), 0);
-
-	char Buffer[1024] = {};
-	recv(ClientSocket, Buffer, 1024, 0);
-
-	std::cout << Buffer;
-
-	closesocket(ClientSocket);
-
-	WSACleanup();
-	
+	int check = 1;
 
 	while (1)
 	{
-		std::cin >> n;
-		if (n == 4)break;
+		if (check == 0)break;
+		std::thread t1([&]()
+			{
+				while (1)
+				{
+					char buffer[512] = {};
+					if(recv(ClientSocket, buffer, 512, 0)==-1)break;
+					std::cout << "Recv Message : " << buffer << std::endl;
+					if (buffer == "EXIT") { closesocket(ClientSocket); break; }
+				}
+
+			}
+		);
+
+		while (1)
+		{
+			char SendMessage[512] = {};
+			std::cin >> SendMessage;
+			if (send(ClientSocket, SendMessage, strlen(SendMessage), 0) == -1)break;
+		}
+		
+
+		
 	}
-
-
+	
+	closesocket(ClientSocket);
+	WSACleanup();
 	return 0;
 }
