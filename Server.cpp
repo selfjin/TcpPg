@@ -36,28 +36,35 @@ int main()
 	SOCKADDR_IN ClientAddr;
 	int len = sizeof(ClientAddr);
 
-	while (1)
+	while ((SOCKET Client = accept(ListenSocket, (sockaddr*)&ClientAddr, &len)) != -1)
 	{
-		SOCKET Client = accept(ListenSocket, (sockaddr*)&ClientAddr, &len);
+		
 		std::cout << " 클라이언트 연결 " << std::endl;
 		
 		// Accpet를 통해 통신을 위한 Client 소켓을 반환받으면 
 		// 별도의 쓰레드로 recv를 갱신한다.
 		std::thread t1([&]()
 			{
-				while (1)
+				char buffer[512] = {};
+				int check = 1;
+
+				while (check)
 				{
-					char buffer[512] = {};
-					if (recv(Client, buffer, 512, 0) == -1)
+					
+					if ((recv(Client, buffer, 512, 0)) == -1)
 					{ 
-						closesocket(Client); 
-						std::cout << " 연결이 종료되어 있습니다 " << std::endl;
+						std::cout << " Recv 실패,연결이 되어있지 않습니다. " << std::endl;
+						check = 0;
 						break;
 					}
 					std::cout << "Recv Message : " << buffer << std::endl;
-					if (buffer == "EXIT") { closesocket(Client); break; }
-				}
 
+
+					
+					if (buffer == eos) { closesocket(Client); check = 0; break; }
+				}
+				
+				
 			}
 		);
 		//계속해서 채팅을 주고 받는다.
@@ -69,10 +76,10 @@ int main()
 			std::cin >> ServerMessage;
 			if (send(Client, ServerMessage, sizeof(ServerMessage), 0) == -1)
 			{
-				std::cout << " 클라이언트와 연결이 끊어졌습니다 " << std::endl;
+				std::cout << " Send 실패, 연결이 되어있지 않습니다. " << std::endl;
 				break;
 			}
-		
+			
 		}
 	}
 
